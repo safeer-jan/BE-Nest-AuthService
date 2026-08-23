@@ -1,0 +1,27 @@
+# dependencies
+node_modules/
+
+# build
+dist/
+build/
+
+# env
+.env
+.env.*.local
+
+# keys (never commit real keys)
+keys/*.pem
+
+# logs
+*.log
+npm-debug.log*
+
+# tests
+coverage/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
