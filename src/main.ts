@@ -3,7 +3,7 @@ import { NestFactory, Reflector } from '@nestjs/core';
 import { ValidationPipe, VersioningType, ClassSerializerInterceptor } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
-import compression from 'compression';
+import * as compression from 'compression';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';

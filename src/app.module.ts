@@ -9,8 +9,10 @@ import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { RedisModule } from './modules/redis/redis.module';
 import { CognitoModule } from './modules/cognito/cognito.module';
+import { RbacModule } from './modules/rbac/rbac.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './modules/auth/guards/roles.guard';
+import { PermissionsGuard } from './modules/auth/guards/permissions.guard';
 
 @Module({
   imports: [
@@ -34,13 +36,14 @@ import { RolesGuard } from './modules/auth/guards/roles.guard';
       useFactory: (config: ConfigService) => ({
         throttlers: [
           {
-            ttl: config.get<number>('throttle.ttl') * 1000,
-            limit: config.get<number>('throttle.limit'),
+            ttl: config.get<number>('throttle.ttl', 60) * 1000,
+            limit: config.get<number>('throttle.limit', 10),
           },
         ],
       }),
     }),
     RedisModule,
+    RbacModule,
     UsersModule,
     AuthModule,
     CognitoModule,
@@ -48,7 +51,10 @@ import { RolesGuard } from './modules/auth/guards/roles.guard';
   providers: [
     // Global guard: every route requires a valid access token unless annotated with @Public().
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    // Coarse role check (@Roles) -- kept for any legacy/simple checks.
     { provide: APP_GUARD, useClass: RolesGuard },
+    // Fine-grained permission check (@Permissions) -- preferred for new endpoints.
+    { provide: APP_GUARD, useClass: PermissionsGuard },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
