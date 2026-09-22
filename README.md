@@ -17,7 +17,7 @@ can focus on its own domain instead of reimplementing auth.
 | Validation | `class-validator` / `class-transformer` |
 | Docs | Swagger/OpenAPI at `/api/docs` |
 | Authorization | Advanced RBAC — DB-backed roles & permissions (many-to-many), enforced via `@Permissions()` |
-| Rate limiting | `@nestjs/throttler` (5 req/min on `/auth/login`) |
+| Rate limiting | `@nestjs/throttler`, Redis-backed store (shared across instances; 5 req/min on `/auth/login`) |
 | Tests | Jest (unit) + Supertest (e2e) |
 | Optional | AWS Cognito as a second, swappable identity provider |
 
