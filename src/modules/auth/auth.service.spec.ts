@@ -207,4 +207,57 @@ describe('AuthService', () => {
       );
     });
   });
+
+  describe('changePassword', () => {
+    it('updates the password and revokes all sessions when the current password is correct', async () => {
+      (argon2.verify as jest.Mock).mockResolvedValue(true);
+
+      await service.changePassword('user-1', 'CorrectCurrent1', 'NewStrongP@ss1');
+
+      expect(usersService.updatePassword).toHaveBeenCalledWith('user-1', 'hashed-password');
+      expect(refreshTokenRepo.update).toHaveBeenCalledWith(
+        { userId: 'user-1', revoked: false },
+        { revoked: true },
+      );
+    });
+
+    it('rejects when the current password is wrong', async () => {
+      (argon2.verify as jest.Mock).mockResolvedValue(false);
+
+      await expect(service.changePassword('user-1', 'WrongPassword', 'NewStrongP@ss1')).rejects.toThrow(
+        UnauthorizedException,
+      );
+      expect(usersService.updatePassword).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('listSessions', () => {
+    it('marks the session matching the current sessionId as current', async () => {
+      refreshTokenRepo.find = jest.fn().mockResolvedValue([
+        { id: 'rt-1', family: 'family-1', userAgent: 'Chrome', ipAddress: '1.1.1.1', createdAt: new Date(), expiresAt: new Date() },
+        { id: 'rt-2', family: 'family-2', userAgent: 'Firefox', ipAddress: '2.2.2.2', createdAt: new Date(), expiresAt: new Date() },
+      ]);
+
+      const result = await service.listSessions('user-1', 'family-2');
+
+      expect(result.find((s) => s.id === 'rt-1')?.current).toBe(false);
+      expect(result.find((s) => s.id === 'rt-2')?.current).toBe(true);
+    });
+  });
+
+  describe('revokeSession', () => {
+    it('revokes a session owned by the user', async () => {
+      refreshTokenRepo.findOne.mockResolvedValue({ id: 'rt-1', userId: 'user-1' });
+
+      await service.revokeSession('user-1', 'rt-1');
+
+      expect(refreshTokenRepo.update).toHaveBeenCalledWith('rt-1', { revoked: true });
+    });
+
+    it('throws when the session does not belong to the user (or does not exist)', async () => {
+      refreshTokenRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.revokeSession('user-1', 'not-mine')).rejects.toThrow('Session not found');
+    });
+  });
 });

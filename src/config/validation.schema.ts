@@ -29,6 +29,7 @@ export const validationSchema = Joi.object({
   THROTTLE_LIMIT: Joi.number().default(10),
 
   CORS_ORIGIN: Joi.string().default('*'),
+  BASE_URL: Joi.string().uri().optional(),
 
   AUTH_PROVIDER: Joi.string().valid('local', 'cognito').default('local'),
   COGNITO_ENABLED: Joi.string().valid('true', 'false').default('false'),

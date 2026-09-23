@@ -18,6 +18,8 @@ export default () => ({
     port: parseInt(process.env.PORT ?? '3000', 10),
     apiPrefix: process.env.API_PREFIX ?? 'api',
     corsOrigin: process.env.CORS_ORIGIN ?? '*',
+    // Used to build absolute URLs (e.g. avatarUrl) returned to the client.
+    baseUrl: process.env.BASE_URL ?? `http://localhost:${process.env.PORT ?? '3000'}`,
   },
   database: {
     host: process.env.DB_HOST,

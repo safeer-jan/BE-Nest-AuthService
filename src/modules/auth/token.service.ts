@@ -9,6 +9,7 @@ export interface TokenSubject {
   email: string;
   roles: string[];
   permissions: string[];
+  sessionId: string;
 }
 
 export interface SignedAccessToken {
@@ -48,6 +49,7 @@ export class TokenService {
       roles: user.roles,
       permissions: user.permissions,
       jti,
+      sessionId: user.sessionId,
     };
 
     const token = this.jwtService.sign(payload, {

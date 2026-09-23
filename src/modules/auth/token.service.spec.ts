@@ -36,6 +36,7 @@ describe('TokenService', () => {
       email: 'a@b.com',
       roles: ['user'],
       permissions: ['users:read'],
+      sessionId: 'session-1',
     });
 
     expect(jwtService.sign).toHaveBeenCalledWith(

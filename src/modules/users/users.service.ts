@@ -1,10 +1,14 @@
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
+import { unlink } from 'fs/promises';
+import { join, basename } from 'path';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { RolesService } from '../rbac/roles.service';
+import { AVATAR_UPLOAD_DIR } from './multer-avatar.config';
 
 @Injectable()
 export class UsersService {
@@ -12,6 +16,7 @@ export class UsersService {
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
     private readonly rolesService: RolesService,
+    private readonly configService: ConfigService,
   ) {}
 
   async create(dto: CreateUserDto, passwordHash: string): Promise<User> {
@@ -41,6 +46,26 @@ export class UsersService {
     }
     user.roles = roles;
     return this.usersRepository.save(user);
+  }
+
+  async updateAvatar(id: string, filename: string): Promise<User> {
+    const user = await this.findByIdOrFail(id);
+    const previousUrl = user.avatarUrl;
+
+    const baseUrl = this.configService.get<string>('app.baseUrl');
+    user.avatarUrl = `${baseUrl}/uploads/avatars/${filename}`;
+    const saved = await this.usersRepository.save(user);
+
+    // Best-effort cleanup of the previous file so uploads/avatars doesn't grow unbounded.
+    // Only delete files that live inside our own upload dir (defensive against unexpected URLs).
+    if (previousUrl?.includes('/uploads/avatars/')) {
+      const previousFilename = basename(previousUrl);
+      unlink(join(AVATAR_UPLOAD_DIR, previousFilename)).catch(() => {
+        // Ignore if the file is already gone -- not worth failing the request over.
+      });
+    }
+
+    return saved;
   }
 
   findByEmail(email: string): Promise<User | null> {

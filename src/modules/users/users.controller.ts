@@ -1,11 +1,13 @@
-import { Controller, Get, Patch, Body, Param, ParseUUIDPipe } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { Controller, Get, Patch, Post, Body, Param, ParseUUIDPipe, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Permissions } from '../../common/decorators/permissions.decorator';
 import { AuthenticatedUser } from '../../common/interfaces/authenticated-user.interface';
 import { AssignUserRolesDto } from '../rbac/dto/assign-user-roles.dto';
+import { avatarMulterOptions } from './multer-avatar.config';
 
 @ApiTags('users')
 @ApiBearerAuth('access-token')
@@ -24,6 +26,20 @@ export class UsersController {
   @ApiOperation({ summary: 'Update the currently authenticated user profile' })
   updateMe(@CurrentUser() user: AuthenticatedUser, @Body() dto: UpdateUserDto) {
     return this.usersService.update(user.id, dto);
+  }
+
+  @Post('me/avatar')
+  @UseInterceptors(FileInterceptor('avatar', avatarMulterOptions))
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: { type: 'object', properties: { avatar: { type: 'string', format: 'binary' } } },
+  })
+  @ApiOperation({ summary: 'Upload/replace the current user\'s profile picture (JPEG/PNG/WebP, max 2MB)' })
+  async uploadAvatar(@CurrentUser() user: AuthenticatedUser, @UploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+    return this.usersService.updateAvatar(user.id, file.filename);
   }
 
   @Get()

@@ -102,7 +102,7 @@ npm run keys:generate          # creates keys/private.pem + keys/public.pem (RS2
 npm run db:setup               # ONE COMMAND: starts Postgres+Redis via Docker,
                                 # waits for Postgres, runs all migrations, creates every table
 
-npm run db:seed                # optional: creates admin@example.com / ChangeMe123! with the "admin" role
+npm run db:seed                # optional: creates safeerjan.tech@gmail.com / Pass@123 with the "admin" role
 
 npm run start:dev              # http://localhost:3000/api/v1
                                 # Swagger:  http://localhost:3000/api/docs

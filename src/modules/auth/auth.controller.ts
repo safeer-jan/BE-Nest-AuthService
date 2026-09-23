@@ -1,5 +1,5 @@
-import { Controller, Post, Body, UseGuards, Req, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
+import { Controller, Post, Get, Delete, Body, Param, ParseUUIDPipe, UseGuards, Req, HttpCode, HttpStatus } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody, ApiOkResponse } from '@nestjs/swagger';
 import { Request } from 'express';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
@@ -7,6 +7,8 @@ import { RegisterDto } from './dto/register.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { SessionResponseDto } from './dto/session-response.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { Public } from '../../common/decorators/public.decorator';
@@ -82,5 +84,31 @@ export class AuthController {
   @ApiOperation({ summary: 'Reset the password using a valid reset token' })
   async resetPassword(@Body() dto: ResetPasswordDto) {
     await this.authService.resetPassword(dto.token, dto.newPassword);
+  }
+
+  @ApiBearerAuth('access-token')
+  @Post('change-password')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Change password while authenticated (requires current password; revokes all sessions)',
+  })
+  async changePassword(@CurrentUser() user: AuthenticatedUser, @Body() dto: ChangePasswordDto) {
+    await this.authService.changePassword(user.id, dto.currentPassword, dto.newPassword);
+  }
+
+  @ApiBearerAuth('access-token')
+  @Get('sessions')
+  @ApiOperation({ summary: 'List active sessions (one per device/login) for the current user' })
+  @ApiOkResponse({ type: [SessionResponseDto] })
+  listSessions(@CurrentUser() user: AuthenticatedUser) {
+    return this.authService.listSessions(user.id, user.sessionId);
+  }
+
+  @ApiBearerAuth('access-token')
+  @Delete('sessions/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Revoke a specific session by id' })
+  async revokeSession(@CurrentUser() user: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string) {
+    await this.authService.revokeSession(user.id, id);
   }
 }

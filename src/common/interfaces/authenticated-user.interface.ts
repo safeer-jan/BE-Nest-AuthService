@@ -4,6 +4,7 @@ export interface AuthenticatedUser {
   roles: string[];
   permissions: string[];
   jti?: string;
+  sessionId?: string;
 }
 
 export interface AccessTokenPayload {
@@ -12,6 +13,7 @@ export interface AccessTokenPayload {
   roles: string[];
   permissions: string[];
   jti: string;
+  sessionId: string;
   iss?: string;
   aud?: string;
   iat?: number;

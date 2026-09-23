@@ -30,6 +30,9 @@ export class User {
   @Column({ type: 'varchar', length: 100, nullable: true })
   lastName?: string;
 
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  avatarUrl?: string;
+
   @ManyToMany(() => Role, { eager: true })
   @JoinTable({
     name: 'user_roles',

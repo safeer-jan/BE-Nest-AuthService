@@ -2,10 +2,11 @@ import {
   Injectable,
   UnauthorizedException,
   BadRequestException,
+  NotFoundException,
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { MoreThan, Repository } from 'typeorm';
 import * as argon2 from 'argon2';
 import { randomUUID } from 'crypto';
 import { UsersService } from '../users/users.service';
@@ -141,6 +142,50 @@ export class AuthService {
     await this.logoutAll(record.userId); // Invalidate existing sessions after a password change.
   }
 
+  /**
+   * Changes the password for an already-authenticated user, after verifying their current
+   * password. As with resetPassword, every session (all devices, including this one) is
+   * revoked afterwards -- the client should treat this as forcing a fresh login.
+   */
+  async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+    const user = await this.usersService.findByIdOrFail(userId);
+
+    const valid = await argon2.verify(user.passwordHash, currentPassword);
+    if (!valid) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    const passwordHash = await argon2.hash(newPassword, { type: argon2.argon2id });
+    await this.usersService.updatePassword(userId, passwordHash);
+    await this.logoutAll(userId);
+  }
+
+  /** Lists the user's active (non-revoked, unexpired) sessions -- one row per refresh-token family. */
+  async listSessions(userId: string, currentSessionId?: string) {
+    const sessions = await this.refreshTokenRepo.find({
+      where: { userId, revoked: false, expiresAt: MoreThan(new Date()) },
+      order: { createdAt: 'DESC' },
+    });
+
+    return sessions.map((s) => ({
+      id: s.id,
+      userAgent: s.userAgent,
+      ipAddress: s.ipAddress,
+      createdAt: s.createdAt,
+      expiresAt: s.expiresAt,
+      current: s.family === currentSessionId,
+    }));
+  }
+
+  /** Revokes a single session (refresh token) belonging to the user. */
+  async revokeSession(userId: string, sessionRowId: string): Promise<void> {
+    const session = await this.refreshTokenRepo.findOne({ where: { id: sessionRowId, userId } });
+    if (!session) {
+      throw new NotFoundException('Session not found');
+    }
+    await this.refreshTokenRepo.update(session.id, { revoked: true });
+  }
+
   private async issueTokenPair(
     user: Pick<User, 'id' | 'email' | 'roles'>,
     family: string,
@@ -151,6 +196,7 @@ export class AuthService {
       email: user.email,
       roles: flattenRoleNames(user.roles),
       permissions: flattenPermissionNames(user.roles),
+      sessionId: family,
     });
 
     const rawRefreshToken = this.tokenService.generateOpaqueToken();
