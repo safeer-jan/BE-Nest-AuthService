@@ -6,8 +6,8 @@ import { AppDataSource } from '../data-source';
 async function seed() {
   const ds = await AppDataSource.initialize();
 
-  const email = process.env.SEED_ADMIN_EMAIL ?? 'admin@example.com';
-  const password = process.env.SEED_ADMIN_PASSWORD ?? 'ChangeMe123!';
+  const email = process.env.SEED_ADMIN_EMAIL ?? 'safeerjan.admin@gmail.com';
+  const password = process.env.SEED_ADMIN_PASSWORD ?? 'Password@123';
 
   const existing = await ds.query('SELECT id FROM users WHERE email = $1', [email]);
   if (existing.length > 0) {

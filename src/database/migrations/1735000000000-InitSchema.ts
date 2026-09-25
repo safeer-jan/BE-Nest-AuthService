@@ -14,6 +14,7 @@ export class InitSchema1735000000000 implements MigrationInterface {
         "passwordHash" varchar(255) NOT NULL,
         "firstName" varchar(100),
         "lastName" varchar(100),
+        "avatarUrl" varchar(500),
         "isEmailVerified" boolean NOT NULL DEFAULT false,
         "isActive" boolean NOT NULL DEFAULT true,
         "createdAt" timestamptz NOT NULL DEFAULT now(),
